@@ -101,6 +101,8 @@ var listTests = []struct {
 		}},
 }
 
+var expectedCategories = map[string]int{"a": 2, "x": 1}
+
 var getTests = []struct {
 	name             string
 	category         string
@@ -169,6 +171,11 @@ func TestInterface(t *testing.T, tester Tester) {
 	result = (storage.Reset() == nil)
 	processResult(t, result, "storage healthy after reset")
 
+	// categories on empty storage
+	err, categories := storage.Categories()
+	result = (err == dr.ErrEmptyStorage) && reflect.DeepEqual(categories, map[string]int{})
+	processResult(t, result, "map categories throws ErrEmptyStorage when store empty")
+
 	// add resources for list checks
 	for _, test := range addForListTests {
 		result = reflect.DeepEqual(storage.Add(test.resource), test.expected)
@@ -186,6 +193,11 @@ func TestInterface(t *testing.T, tester Tester) {
 		}
 		processResult(t, result, test.name)
 	}
+
+	// categories test
+	err, categories = storage.Categories()
+	result = (err == nil) && reflect.DeepEqual(categories, expectedCategories)
+	processResult(t, result, "map categories and number of items therein")
 
 	// get tests
 	for _, test := range getTests {

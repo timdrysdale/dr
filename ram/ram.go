@@ -121,16 +121,22 @@ func (r *RamStorage) Reset() error {
 	return r.HealthCheck()
 }
 
-func (r *RamStorage) Categories() (error, []string) {
-	r.RLock()
-	defer r.RUnlock()
-	return dr.ErrEmptyStorage, make([]string, 0)
-}
+func (r *RamStorage) Categories() (error, map[string]int) {
 
-func (r *RamStorage) Population() (error, map[string]int) {
+	categoryMap := make(map[string]int)
+
 	r.RLock()
 	defer r.RUnlock()
-	return dr.ErrEmptyStorage, make(map[string]int)
+
+	if len(r.resources) == 0 {
+		return dr.ErrEmptyStorage, categoryMap
+	}
+
+	for category, resourceMap := range r.resources {
+		categoryMap[category] = len(resourceMap)
+	}
+
+	return nil, categoryMap
 }
 
 func New() dr.Storage {

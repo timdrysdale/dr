@@ -8,8 +8,7 @@ type Storage interface {
 	Get(category string, id string) (error, Dr)
 	HealthCheck() error
 	Reset() error
-	Categories() (error, []string)
-	Population() (error, map[string]int)
+	Categories() (error, map[string]int)
 }
 
 type Dr struct {
@@ -21,7 +20,7 @@ type Dr struct {
 	TTL         int64
 }
 
-const Separator = "."
+const Separator = "." //to ease usage of simple key-value stores, via key = <category>.<ID>
 
 var ErrUndefinedCategory = errors.New("Undefined Category")
 var ErrUndefinedID = errors.New("Undefined ID")
