@@ -43,7 +43,8 @@ var addForListTests = []struct {
 			Category:    "a",
 			ID:          "a",
 			Resource:    "Resource-a.a",
-			Description: "Item-a.a"},
+			Description: "Item-a.a",
+			Reusable:    true},
 		nil},
 	{"add resource a.b for list test",
 		dr.Dr{
@@ -90,11 +91,63 @@ var listTests = []struct {
 				Category:    "a",
 				ID:          "a",
 				Description: "Item-a.a",
+				Reusable:    true,
 			},
 			"b": dr.Dr{
 				Category:    "a",
 				ID:          "b",
 				Description: "Item-a.b",
+			},
+		}},
+}
+
+var getTests = []struct {
+	name             string
+	category         string
+	ID               string
+	errExpected      error
+	resourceExpected dr.Dr
+}{
+	{"get resource a.a",
+		"a",
+		"a",
+		nil,
+		dr.Dr{
+			Category:    "a",
+			ID:          "a",
+			Description: "Item-a.a",
+			Resource:    "Resource-a.a",
+			Reusable:    true,
+		},
+	},
+	{"get resource a.b",
+		"a",
+		"b",
+		nil,
+		dr.Dr{
+			Category:    "a",
+			ID:          "b",
+			Description: "Item-a.b",
+			Resource:    "Resource-a.b",
+		},
+	},
+}
+
+var postGetListTests = []struct {
+	name         string
+	category     string
+	errExpected  error
+	listExpected map[string]dr.Dr
+}{
+	{"return map-by-id of remaining resource in category 'a'",
+		"a",
+		nil,
+		map[string]dr.Dr{
+			"a": dr.Dr{
+				Category:    "a",
+				ID:          "a",
+				Description: "Item-a.a",
+				Reusable:    true,
 			},
 		}},
 }
@@ -122,8 +175,32 @@ func TestInterface(t *testing.T, tester Tester) {
 		processResult(t, result, test.name)
 	}
 
-	// list checks
+	// list tests
 	for _, test := range listTests {
+		err, list := storage.List(test.category)
+		result = (err == test.errExpected) && (reflect.DeepEqual(list, test.listExpected))
+		if debugTest {
+			t.Log(list)
+			t.Log(test.listExpected)
+			t.Log(reflect.DeepEqual(list, test.listExpected))
+		}
+		processResult(t, result, test.name)
+	}
+
+	// get tests
+	for _, test := range getTests {
+		err, resource := storage.Get(test.category, test.ID)
+		result = (err == test.errExpected) && (reflect.DeepEqual(resource, test.resourceExpected))
+		if debugTest {
+			t.Log(resource)
+			t.Log(test.resourceExpected)
+			t.Log(reflect.DeepEqual(resource, test.resourceExpected))
+		}
+		processResult(t, result, test.name)
+	}
+
+	// post-get list tests
+	for _, test := range postGetListTests {
 		err, list := storage.List(test.category)
 		result = (err == test.errExpected) && (reflect.DeepEqual(list, test.listExpected))
 		if debugTest {

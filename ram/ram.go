@@ -74,14 +74,30 @@ func (r *RamStorage) List(category string) (error, map[string]dr.Dr) {
 }
 
 func (r *RamStorage) Get(category string, id string) (error, dr.Dr) {
-	resource := dr.Dr{}
+
+	emptyResource := dr.Dr{}
 
 	r.Lock()
-	//TODO
-	// delete singleuse resource from memory - so can't pass a pointer!
-	r.Unlock()
+	defer r.Unlock()
 
-	return nil, resource
+	// category existence check
+	if _, ok := r.resources[category]; !ok {
+		return dr.ErrNoSuchCategory, emptyResource
+	}
+
+	// ID existence check
+	if resource, ok := r.resources[category][id]; ok {
+
+		if !resource.Reusable {
+			delete(r.resources[category], id)
+		}
+
+		return nil, resource
+
+	} else {
+		return dr.ErrNoSuchID, emptyResource
+	}
+
 }
 
 func (r *RamStorage) HealthCheck() error {
