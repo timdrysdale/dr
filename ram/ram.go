@@ -8,7 +8,7 @@ import (
 )
 
 type RamStorage struct {
-	resources map[string]map[string]*dr.Dr
+	resources map[string]map[string]dr.Dr
 }
 
 func (r *RamStorage) Add(resource dr.Dr) error {
@@ -31,38 +31,43 @@ func (r *RamStorage) Add(resource dr.Dr) error {
 
 	// create category if does not already exist
 	if _, ok := r.resources[resource.Category]; !ok {
-		r.resources[resource.Category] = make(map[string]*dr.Dr)
+		r.resources[resource.Category] = make(map[string]dr.Dr)
 	}
 
-	r.resources[resource.Category][resource.ID] = &resource
+	r.resources[resource.Category][resource.ID] = resource
 
 	return nil
 }
 
-func (r *RamStorage) List(category string) (error, map[string]*dr.Dr) {
+func (r *RamStorage) List(category string) (error, map[string]dr.Dr) {
+
+	publicList := make(map[string]dr.Dr)
 
 	// existence check
 	if _, ok := r.resources[category]; !ok {
-		return dr.ErrNoSuchCategory, nil
+		return dr.ErrNoSuchCategory, publicList
 	}
 
 	// empty list check
 	if len(r.resources[category]) == 0 {
-		return dr.ErrEmptyList, nil
+		return dr.ErrEmptyList, publicList
 	}
 
-	publicList := make(map[string]*dr.Dr)
 	// return list omitting details of the resource
+
 	for id, resource := range r.resources[category] {
-		publicList[id] = resource
-		publicList[id].Resource = ""
+		publicResource := resource
+		publicResource.Resource = ""
+		publicList[id] = publicResource
 	}
 
 	return nil, publicList
 }
 
-func (r *RamStorage) Request(category string, id string) (error, dr.Dr) {
+func (r *RamStorage) Get(category string, id string) (error, dr.Dr) {
 	resource := dr.Dr{}
+
+	// delete resource from memory - so can't pass a pointer!
 	return nil, resource
 }
 
@@ -75,11 +80,19 @@ func (r *RamStorage) HealthCheck() error {
 }
 
 func (r *RamStorage) Reset() error {
-	r.resources = make(map[string]map[string]*dr.Dr)
+	r.resources = make(map[string]map[string]dr.Dr)
 	return r.HealthCheck()
 }
 
+func (r *RamStorage) Categories() (error, []string) {
+	return dr.ErrEmptyStorage, make([]string, 0)
+}
+
+func (r *RamStorage) Population() (error, map[string]int) {
+	return dr.ErrEmptyStorage, make(map[string]int)
+}
+
 func New() dr.Storage {
-	r := RamStorage{resources: make(map[string]map[string]*dr.Dr)}
+	r := RamStorage{resources: make(map[string]map[string]dr.Dr)}
 	return &r
 }

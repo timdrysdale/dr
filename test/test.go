@@ -31,6 +31,55 @@ var addSanityTests = []struct {
 	{"accept resource with zero ttl", dr.Dr{Category: "a", ID: "0", TTL: 0}, nil},
 }
 
+var addForListTests = []struct {
+	name     string
+	resource dr.Dr
+	expected error
+}{
+	{"add resource a.a for list test",
+		dr.Dr{
+			Category:    "a",
+			ID:          "a",
+			Resource:    "Resource-a.a",
+			Description: "Item-a.a"},
+		nil},
+	{"add resource a.b for list test",
+		dr.Dr{
+			Category:    "a",
+			ID:          "b",
+			Resource:    "Resource-a.b",
+			Description: "Item-a.b"},
+		nil},
+}
+
+var listTests = []struct {
+	name         string
+	category     string
+	errExpected  error
+	listExpected map[string]dr.Dr
+}{
+	{"throw error on listing nonexistent category",
+		"foo",
+		dr.ErrNoSuchCategory,
+		make(map[string]dr.Dr),
+	},
+	{"return map of resources in known category with resource field removed",
+		"a",
+		nil,
+		map[string]dr.Dr{
+			"a": dr.Dr{
+				Category:    "a",
+				ID:          "a",
+				Description: "Item-a.a",
+			},
+			"b": dr.Dr{
+				Category:    "a",
+				ID:          "b",
+				Description: "Item-a.b",
+			},
+		}},
+}
+
 func TestInterface(t *testing.T, tester Tester) {
 
 	// initialisation
@@ -38,7 +87,7 @@ func TestInterface(t *testing.T, tester Tester) {
 	result := (storage.HealthCheck() == nil)
 	processResult(t, result, "storage healthy after initialisation")
 
-	// adding - sanity checks
+	// add - sanity checks
 	for _, test := range addSanityTests {
 		result = reflect.DeepEqual(storage.Add(test.resource), test.expected)
 		processResult(t, result, test.name)
@@ -47,6 +96,19 @@ func TestInterface(t *testing.T, tester Tester) {
 	// reset
 	result = (storage.Reset() == nil)
 	processResult(t, result, "storage healthy after reset")
+
+	// add resources for list checks
+	for _, test := range addForListTests {
+		result = reflect.DeepEqual(storage.Add(test.resource), test.expected)
+		processResult(t, result, test.name)
+	}
+
+	// list checks
+	for _, test := range listTests {
+		err, list := storage.List(test.category)
+		result = (err == test.errExpected) && (reflect.DeepEqual(list, test.listExpected))
+		processResult(t, result, test.name)
+	}
 
 }
 
