@@ -10,25 +10,25 @@ type RamStorage struct {
 	resources map[string]map[string]*dr.Dr
 }
 
-func (r *RamStorage) Add(dr dr.Dr) error {
-	if dr.Category == "" {
-		return errors.New("Undefined Category")
+func (r *RamStorage) Add(resource dr.Dr) error {
+	if resource.Category == "" {
+		return dr.ErrUndefinedCategory
 	}
-	if dr.ID == "" {
-		return errors.New("Undefined ID")
+	if resource.ID == "" {
+		return dr.ErrUndefinedID
 	}
 
 	return nil
 }
 
 func (r *RamStorage) List(category string) (error, []dr.Dr) {
-	drList := make([]dr.Dr, 0)
-	return nil, drList
+	resourceList := make([]dr.Dr, 0)
+	return nil, resourceList
 }
 
 func (r *RamStorage) Request(category string, id string) (error, dr.Dr) {
-	dr := dr.Dr{}
-	return nil, dr
+	resource := dr.Dr{}
+	return nil, resource
 }
 
 func (r *RamStorage) HealthCheck() error {

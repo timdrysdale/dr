@@ -27,6 +27,7 @@ var addTests = []struct {
 	{"reject no Category", dr.Dr{ID: "DoesNotMatter"}, dr.ErrUndefinedCategory},
 	{"reject illegal dot in ID", dr.Dr{ID: "Does.Not.Matter"}, dr.ErrIllegalID},
 	{"reject illegal dot in Category", dr.Dr{Category: "Does.Not.Matter"}, dr.ErrIllegalCategory},
+	{"accept resource with nil resource, description, ttl", dr.Dr{Category: "a", ID: "0"}, nil},
 }
 
 func TestInterface(t *testing.T, tester Tester) {
@@ -36,15 +37,15 @@ func TestInterface(t *testing.T, tester Tester) {
 	result := (storage.HealthCheck() == nil)
 	processResult(t, result, "storage healthy after initialisation")
 
-	// reset
-	result = (storage.Reset() == nil)
-	processResult(t, result, "storage healthy after reset")
-
 	// adding
 	for _, test := range addTests {
 		result = reflect.DeepEqual(storage.Add(test.resource), test.expected)
 		processResult(t, result, test.name)
 	}
+
+	// reset
+	result = (storage.Reset() == nil)
+	processResult(t, result, "storage healthy after reset")
 
 }
 
