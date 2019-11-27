@@ -3,12 +3,14 @@ package ram
 import (
 	"errors"
 	"strings"
+	"sync"
 
 	"github.com/timdrysdale/dr"
 )
 
 type RamStorage struct {
 	resources map[string]map[string]dr.Dr
+	sync.RWMutex
 }
 
 func (r *RamStorage) Add(resource dr.Dr) error {
@@ -30,6 +32,10 @@ func (r *RamStorage) Add(resource dr.Dr) error {
 	}
 
 	// create category if does not already exist
+
+	r.Lock()
+	defer r.Unlock()
+
 	if _, ok := r.resources[resource.Category]; !ok {
 		r.resources[resource.Category] = make(map[string]dr.Dr)
 	}
@@ -42,6 +48,9 @@ func (r *RamStorage) Add(resource dr.Dr) error {
 func (r *RamStorage) List(category string) (error, map[string]dr.Dr) {
 
 	publicList := make(map[string]dr.Dr)
+
+	r.RLock()
+	defer r.RUnlock()
 
 	// existence check
 	if _, ok := r.resources[category]; !ok {
@@ -67,11 +76,19 @@ func (r *RamStorage) List(category string) (error, map[string]dr.Dr) {
 func (r *RamStorage) Get(category string, id string) (error, dr.Dr) {
 	resource := dr.Dr{}
 
-	// delete resource from memory - so can't pass a pointer!
+	r.Lock()
+	//TODO
+	// delete singleuse resource from memory - so can't pass a pointer!
+	r.Unlock()
+
 	return nil, resource
 }
 
 func (r *RamStorage) HealthCheck() error {
+
+	r.RLock()
+	defer r.RUnlock()
+
 	if r.resources != nil {
 		return nil
 	} else {
@@ -80,15 +97,23 @@ func (r *RamStorage) HealthCheck() error {
 }
 
 func (r *RamStorage) Reset() error {
+
+	r.Lock()
 	r.resources = make(map[string]map[string]dr.Dr)
+	r.Unlock()
+
 	return r.HealthCheck()
 }
 
 func (r *RamStorage) Categories() (error, []string) {
+	r.RLock()
+	defer r.RUnlock()
 	return dr.ErrEmptyStorage, make([]string, 0)
 }
 
 func (r *RamStorage) Population() (error, map[string]int) {
+	r.RLock()
+	defer r.RUnlock()
 	return dr.ErrEmptyStorage, make(map[string]int)
 }
 
