@@ -17,6 +17,8 @@ type Tester struct {
 	// whatever you need. Leave nil if function does not apply
 }
 
+var debugTest = false
+
 var addSanityTests = []struct {
 	name     string
 	resource dr.Dr
@@ -50,6 +52,13 @@ var addForListTests = []struct {
 			Resource:    "Resource-a.b",
 			Description: "Item-a.b"},
 		nil},
+	{"add resource x.y for list test",
+		dr.Dr{
+			Category:    "x",
+			ID:          "y",
+			Resource:    "Resource-x.y",
+			Description: "Item-x.y"},
+		nil},
 }
 
 var listTests = []struct {
@@ -63,7 +72,17 @@ var listTests = []struct {
 		dr.ErrNoSuchCategory,
 		make(map[string]dr.Dr),
 	},
-	{"return map of resources in known category with resource field removed",
+	{"return map-by-id of one resource in category 'x' with resource field removed",
+		"x",
+		nil,
+		map[string]dr.Dr{
+			"y": dr.Dr{
+				Category:    "x",
+				ID:          "y",
+				Description: "Item-x.y",
+			},
+		}},
+	{"return map-by-id of two resources in category 'a' with resource field removed",
 		"a",
 		nil,
 		map[string]dr.Dr{
@@ -107,6 +126,11 @@ func TestInterface(t *testing.T, tester Tester) {
 	for _, test := range listTests {
 		err, list := storage.List(test.category)
 		result = (err == test.errExpected) && (reflect.DeepEqual(list, test.listExpected))
+		if debugTest {
+			t.Log(list)
+			t.Log(test.listExpected)
+			t.Log(reflect.DeepEqual(list, test.listExpected))
+		}
 		processResult(t, result, test.name)
 	}
 
