@@ -1,6 +1,7 @@
 package test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/timdrysdale/dr"
@@ -16,17 +17,41 @@ type Tester struct {
 	// whatever you need. Leave nil if function does not apply
 }
 
+var addTests = []struct {
+	name     string
+	resource dr.Dr
+	expected error
+}{
+	{"reject no Category or ID", dr.Dr{}, dr.ErrUndefinedCategory},
+	{"reject no Id", dr.Dr{Category: "DoesNotMatter"}, dr.ErrUndefinedID},
+	{"reject no Category", dr.Dr{ID: "DoesNotMatter"}, dr.ErrUndefinedCategory},
+	{"reject illegal dot in ID", dr.Dr{ID: "Does.Not.Matter"}, dr.ErrIllegalID},
+	{"reject illegal dot in Category", dr.Dr{Category: "Does.Not.Matter"}, dr.ErrIllegalCategory},
+}
+
 func TestInterface(t *testing.T, tester Tester) {
 
 	// initialisation
 
 	storage := tester.New()
 	//expect blocks until ready, so test right away
-	if storage.HealthCheck() != nil {
-		t.Fatal("Unhealthy storage")
-	}
-	t.Logf("Storage Initialisation: PASS")
+	result := (storage.HealthCheck() == nil)
+	processResult(t, result, "storage healthy after initialisation")
 
+	// adding
+	for _, test := range addTests {
+		result = reflect.DeepEqual(storage.Add(test.resource), test.expected)
+		processResult(t, result, test.name)
+	}
+
+}
+
+func processResult(t *testing.T, result bool, name string) {
+	if result {
+		t.Logf("  pass   %s\n", name)
+	} else {
+		t.Errorf("**FAIL** %s\n", name)
+	}
 }
 
 // Testing tips https://medium.com/@povilasve/go-advanced-tips-tricks-a872503ac859
