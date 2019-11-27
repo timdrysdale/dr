@@ -31,12 +31,14 @@ var addTests = []struct {
 
 func TestInterface(t *testing.T, tester Tester) {
 
-	// initialisation
-
+	// initialisation - expect New() blocks until initialisation complete
 	storage := tester.New()
-	//expect blocks until ready, so test right away
 	result := (storage.HealthCheck() == nil)
 	processResult(t, result, "storage healthy after initialisation")
+
+	// reset
+	result = (storage.Reset() == nil)
+	processResult(t, result, "storage healthy after reset")
 
 	// adding
 	for _, test := range addTests {

@@ -7,6 +7,7 @@ type Storage interface {
 	List(category string) (error, []Dr)
 	Request(category string, id string) (error, Dr)
 	HealthCheck() error
+	Reset() error
 }
 
 type Dr struct {

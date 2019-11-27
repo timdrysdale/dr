@@ -39,17 +39,10 @@ func (r *RamStorage) HealthCheck() error {
 	}
 }
 
-/*
-type Dr struct {
-	Category    string
-	Description string
-	ID          string
-	Resource    string
-	Reusable    bool
-	TTL         int64
+func (r *RamStorage) Reset() error {
+	r.resources = make(map[string]map[string]*dr.Dr)
+	return r.HealthCheck()
 }
-
-*/
 
 func New() dr.Storage {
 	r := RamStorage{resources: make(map[string]map[string]*dr.Dr)}
