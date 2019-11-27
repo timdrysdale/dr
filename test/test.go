@@ -17,7 +17,7 @@ type Tester struct {
 	// whatever you need. Leave nil if function does not apply
 }
 
-var addTests = []struct {
+var addSanityTests = []struct {
 	name     string
 	resource dr.Dr
 	expected error
@@ -25,20 +25,21 @@ var addTests = []struct {
 	{"reject no Category or ID", dr.Dr{}, dr.ErrUndefinedCategory},
 	{"reject no Id", dr.Dr{Category: "DoesNotMatter"}, dr.ErrUndefinedID},
 	{"reject no Category", dr.Dr{ID: "DoesNotMatter"}, dr.ErrUndefinedCategory},
-	{"reject illegal dot in ID", dr.Dr{ID: "Does.Not.Matter"}, dr.ErrIllegalID},
-	{"reject illegal dot in Category", dr.Dr{Category: "Does.Not.Matter"}, dr.ErrIllegalCategory},
+	{"reject illegal dot in ID", dr.Dr{Category: "a", ID: "Does.Not.Matter"}, dr.ErrIllegalID},
+	{"reject illegal dot in Category", dr.Dr{Category: "Does.Not.Matter", ID: "a"}, dr.ErrIllegalCategory},
 	{"accept resource with nil resource, description, ttl", dr.Dr{Category: "a", ID: "0"}, nil},
+	{"accept resource with zero ttl", dr.Dr{Category: "a", ID: "0", TTL: 0}, nil},
 }
 
 func TestInterface(t *testing.T, tester Tester) {
 
-	// initialisation - expect New() blocks until initialisation complete
-	storage := tester.New()
+	// initialisation
+	storage := tester.New() // expect New() blocks until initialisation complete
 	result := (storage.HealthCheck() == nil)
 	processResult(t, result, "storage healthy after initialisation")
 
-	// adding
-	for _, test := range addTests {
+	// adding - sanity checks
+	for _, test := range addSanityTests {
 		result = reflect.DeepEqual(storage.Add(test.resource), test.expected)
 		processResult(t, result, test.name)
 	}
