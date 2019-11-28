@@ -5,12 +5,34 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/jonboulle/clockwork"
 	"github.com/timdrysdale/dr"
 )
 
+/*
+
+Mock time - where to store the clock, and how to sub a real clock in production?
+use the New constructor for this ...
+
+https://github.com/jonboulle/clockwork
+
+or.... is this an implementation detail that should not spill into the interface?
+
+*/
+
+type expiringResource struct {
+	resource   dr.Dr
+	validUntil int64
+}
+
 type RamStorage struct {
-	resources map[string]map[string]dr.Dr
+	resources map[string]map[string]expiringResource
+	clock     clockwork.Clock
 	sync.RWMutex
+}
+
+func (r *RamStorage) Now() int64 {
+	return r.clock.Now().Unix()
 }
 
 func (r *RamStorage) Add(resource dr.Dr) error {
@@ -37,10 +59,12 @@ func (r *RamStorage) Add(resource dr.Dr) error {
 	defer r.Unlock()
 
 	if _, ok := r.resources[resource.Category]; !ok {
-		r.resources[resource.Category] = make(map[string]dr.Dr)
+		r.resources[resource.Category] = make(map[string]expiringResource)
 	}
 
-	r.resources[resource.Category][resource.ID] = resource
+	validUntil := r.Now() + resource.TTL
+
+	r.resources[resource.Category][resource.ID] = expiringResource{resource: resource, validUntil: validUntil}
 
 	return nil
 }
@@ -65,7 +89,7 @@ func (r *RamStorage) List(category string) (error, map[string]dr.Dr) {
 	// return list omitting details of the resource
 
 	for id, resource := range r.resources[category] {
-		publicResource := resource
+		publicResource := resource.resource
 		publicResource.Resource = ""
 		publicList[id] = publicResource
 	}
@@ -88,11 +112,11 @@ func (r *RamStorage) Get(category string, id string) (error, dr.Dr) {
 	// ID existence check
 	if resource, ok := r.resources[category][id]; ok {
 
-		if !resource.Reusable {
+		if !resource.resource.Reusable {
 			delete(r.resources[category], id)
 		}
 
-		return nil, resource
+		return nil, resource.resource
 
 	} else {
 		return dr.ErrNoSuchID, emptyResource
@@ -115,7 +139,7 @@ func (r *RamStorage) HealthCheck() error {
 func (r *RamStorage) Reset() error {
 
 	r.Lock()
-	r.resources = make(map[string]map[string]dr.Dr)
+	r.resources = make(map[string]map[string]expiringResource)
 	r.Unlock()
 
 	return r.HealthCheck()
@@ -140,6 +164,14 @@ func (r *RamStorage) Categories() (error, map[string]int) {
 }
 
 func New() dr.Storage {
-	r := RamStorage{resources: make(map[string]map[string]dr.Dr)}
+	r := RamStorage{resources: make(map[string]map[string]expiringResource), clock: clockwork.NewRealClock()}
 	return &r
 }
+
+func NewForTest() dr.Storage {
+	r := RamStorage{resources: make(map[string]map[string]expiringResource), clock: clockwork.NewRealClock()}
+	Return & r
+}
+
+//	thoughts ... some external libraries probably won't permit mocking of time, e.g. redis db
+//   sooooooooo .... clockwork.NewFakeClock() isn't much help....
