@@ -103,6 +103,7 @@ var listTests = []struct {
 }
 
 var expectedCategories = map[string]int{"a": 2, "x": 1}
+var expectedCategoriesAfterTTL = map[string]int{"a": 1, "x": 1}
 
 var getTests = []struct {
 	name             string
@@ -175,7 +176,7 @@ var addForTTLTests = []struct {
 			ID:          "d",
 			Resource:    "Resource-a.d",
 			Description: "Item-a.d",
-			TTL:         20,
+			TTL:         5,
 		},
 		nil},
 	{"add resource a.e for ttl test",
@@ -217,7 +218,7 @@ var listForTTLTests = []struct {
 				Category:    "a",
 				ID:          "d",
 				Description: "Item-a.d",
-				TTL:         20,
+				TTL:         5,
 			},
 			"e": dr.Dr{
 				Category:    "a",
@@ -241,7 +242,7 @@ var listForTTLTests = []struct {
 				Category:    "a",
 				ID:          "d",
 				Description: "Item-a.d",
-				TTL:         18,
+				TTL:         3,
 			},
 			"e": dr.Dr{
 				Category:    "a",
@@ -299,7 +300,7 @@ var listAfterTTLTests = []struct {
 				Category:    "a",
 				ID:          "d",
 				Description: "Item-a.d",
-				TTL:         16,
+				TTL:         1,
 			},
 		}},
 }
@@ -418,6 +419,13 @@ func TestInterface(t *testing.T, tester Tester) {
 		}
 		processResult(t, result, test.name)
 	}
+
+	// await a.d expiring to check that categories cleans stale entries
+	/*time.Sleep(2000 * time.Millisecond)
+	err, categories = storage.Categories()
+	result = (err == nil) && reflect.DeepEqual(categories, expectedCategoriesAfterTTL)
+	processResult(t, result, "map categories and ignore stale resource")
+	*/
 }
 
 func processResult(t *testing.T, result bool, name string) {

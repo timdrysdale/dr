@@ -206,17 +206,35 @@ func (r *RamStorage) Reset() error {
 func (r *RamStorage) Categories() (error, map[string]int) {
 
 	categoryMap := make(map[string]int)
+	/*categoryList := []string{}
 
 	r.RLock()
-	defer r.RUnlock()
 
-	if len(r.resources) == 0 {
+
+
+	for category, _ := range r.resources {
+		categoryList = append(categoryList, category)
+	}
+
+	r.RUnlock()
+
+	//for _, category := range categoryList {
+	//	_, _ = r.List(category) //use list to do stale cleaning
+	//}
+	*/
+	r.RLock()
+	numCategories := len(r.resources)
+	r.RUnlock()
+
+	if numCategories == 0 {
 		return dr.ErrEmptyStorage, categoryMap
 	}
 
+	r.RLock()
 	for category, resourceMap := range r.resources {
 		categoryMap[category] = len(resourceMap)
 	}
+	r.RUnlock()
 
 	return nil, categoryMap
 }
