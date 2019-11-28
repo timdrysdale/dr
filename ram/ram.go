@@ -72,7 +72,7 @@ func (r *RamStorage) List(category string) (error, map[string]dr.Dr) {
 
 	// existence check
 	if _, ok := r.resources[category]; !ok {
-		return dr.ErrNoSuchCategory, publicList
+		return dr.ErrResourceNotFound, publicList
 	}
 
 	// empty list check
@@ -114,6 +114,29 @@ func (r *RamStorage) List(category string) (error, map[string]dr.Dr) {
 	return nil, publicList
 }
 
+func (r *RamStorage) Delete(category string, id string) (error, dr.Dr) {
+
+	emptyResource := dr.Dr{}
+
+	r.Lock()
+	defer r.Unlock()
+
+	// category existence check
+	if _, ok := r.resources[category]; !ok {
+		return dr.ErrResourceNotFound, emptyResource
+	}
+
+	// ID existence check & deletion
+	if expiringResource, ok := r.resources[category][id]; ok {
+		delete(r.resources[category], id)
+		return nil, expiringResource.resource
+	} else {
+		// not found
+		return dr.ErrResourceNotFound, emptyResource
+	}
+
+}
+
 func (r *RamStorage) Get(category string, id string) (error, dr.Dr) {
 
 	emptyResource := dr.Dr{}
@@ -123,7 +146,7 @@ func (r *RamStorage) Get(category string, id string) (error, dr.Dr) {
 
 	// category existence check
 	if _, ok := r.resources[category]; !ok {
-		return dr.ErrNoSuchCategory, emptyResource
+		return dr.ErrResourceNotFound, emptyResource
 	}
 
 	// ID existence check
@@ -151,7 +174,7 @@ func (r *RamStorage) Get(category string, id string) (error, dr.Dr) {
 		if expired {
 
 			// expired since last clean, don't return it
-			return dr.ErrNoSuchID, emptyResource
+			return dr.ErrResourceNotFound, emptyResource
 
 		} else {
 
@@ -166,7 +189,7 @@ func (r *RamStorage) Get(category string, id string) (error, dr.Dr) {
 
 	} else {
 		// not found
-		return dr.ErrNoSuchID, emptyResource
+		return dr.ErrResourceNotFound, emptyResource
 	}
 
 }

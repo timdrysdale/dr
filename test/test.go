@@ -71,7 +71,7 @@ var listTests = []struct {
 }{
 	{"throw error on listing nonexistent category",
 		"foo",
-		dr.ErrNoSuchCategory,
+		dr.ErrResourceNotFound,
 		make(map[string]dr.Dr),
 	},
 	{"return map-by-id of one resource in category 'x' with resource field removed",
@@ -275,7 +275,34 @@ var postTTLGetTests = []struct {
 	{"get resource a.e",
 		"a",
 		"e",
-		dr.ErrNoSuchID,
+		dr.ErrResourceNotFound,
+		dr.Dr{},
+	},
+}
+
+var postTTLDeleteTests = []struct {
+	name             string
+	category         string
+	ID               string
+	errExpected      error
+	resourceExpected dr.Dr
+}{
+	{"delete reusable resource a.a",
+		"a",
+		"a",
+		nil,
+		dr.Dr{
+			Category:    "a",
+			ID:          "a",
+			Description: "Item-a.a",
+			Resource:    "Resource-a.a",
+			Reusable:    true,
+		},
+	},
+	{"throw err deleting deleted resource a.a",
+		"a",
+		"a",
+		dr.ErrResourceNotFound, // a.d has gone by now so category error, not ID error
 		dr.Dr{},
 	},
 }
@@ -374,9 +401,29 @@ func TestInterface(t *testing.T, tester Tester) {
 		processResult(t, result, test.name)
 	}
 
+	// Tarantino time: tests to come after TTL testing - defer so we don't skip
+	defer func() {
+
+		for _, test := range postTTLDeleteTests {
+			err, resource := storage.Delete(test.category, test.ID)
+			result = (err == test.errExpected) && (reflect.DeepEqual(resource, test.resourceExpected))
+			if debugTest {
+				t.Log(err)
+				t.Log(test.errExpected)
+				t.Log(resource)
+				t.Log(test.resourceExpected)
+				t.Log(reflect.DeepEqual(resource, test.resourceExpected))
+			}
+			processResult(t, result, test.name)
+		}
+
+	}()
+
+	// nothing after this point will run if the test is -short
 	if testing.Short() {
 		t.Skip("**SKIP** skipping TTL tests - check before releasing though!")
 	}
+
 	// add resources for TTL test
 	for _, test := range addForTTLTests {
 		result = reflect.DeepEqual(storage.Add(test.resource), test.expected)
