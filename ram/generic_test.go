@@ -9,5 +9,5 @@ import (
 // run generic tests on this particular implementation
 func TestInterface(t *testing.T) {
 	t.Log("Testing ./ram ...")
-	test.TestInterface(t, test.Tester{NewForTest: NewForTest})
+	test.TestInterface(t, test.Tester{New: New})
 }

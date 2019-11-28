@@ -12,13 +12,13 @@ import (
 
 // functions needed for each implementation to test it
 type Tester struct {
-	NewForTest func() dr.Storage
-	Done       func(*dr.Storage)
+	New  func() dr.Storage
+	Done func(*dr.Storage)
 
 	// whatever you need. Leave nil if function does not apply
 }
 
-var debugTest = false
+var debugTest = true
 
 var addSanityTests = []struct {
 	name     string
@@ -175,7 +175,7 @@ var addForTTLTests = []struct {
 			ID:          "d",
 			Resource:    "Resource-a.d",
 			Description: "Item-a.d",
-			TTL:         2,
+			TTL:         20,
 		},
 		nil},
 }
@@ -187,8 +187,8 @@ var listForTTLTests = []struct {
 	errExpected  error
 	listExpected map[string]dr.Dr
 }{
-	{"list after 0.5 sec shows a.a, a.b, a.c, a.d",
-		500 * time.Millisecond,
+	{"list after 0.001 sec shows a.a, a.c and a.d",
+		1 * time.Millisecond,
 		"a",
 		nil,
 		map[string]dr.Dr{
@@ -197,25 +197,22 @@ var listForTTLTests = []struct {
 				ID:          "a",
 				Description: "Item-a.a",
 				Reusable:    true,
-			},
-			"b": dr.Dr{
-				Category:    "a",
-				ID:          "b",
-				Description: "Item-a.b",
 			},
 			"c": dr.Dr{
 				Category:    "a",
 				ID:          "c",
 				Description: "Item-a.c",
+				TTL:         1,
 			},
 			"d": dr.Dr{
 				Category:    "a",
 				ID:          "d",
 				Description: "Item-a.d",
+				TTL:         20,
 			},
 		}},
-	{"list after 1.5 sec shows a.a, a.b, a.d",
-		1500 * time.Millisecond,
+	{"list after 2.001 sec shows a.a and a.d with updated TTL",
+		2000 * time.Millisecond,
 		"a",
 		nil,
 		map[string]dr.Dr{
@@ -225,32 +222,11 @@ var listForTTLTests = []struct {
 				Description: "Item-a.a",
 				Reusable:    true,
 			},
-			"b": dr.Dr{
-				Category:    "a",
-				ID:          "b",
-				Description: "Item-a.b",
-			},
 			"d": dr.Dr{
 				Category:    "a",
 				ID:          "d",
 				Description: "Item-a.d",
-			},
-		}},
-	{"list after 2.5 sec shows a.a, a.b",
-		2500 * time.Millisecond,
-		"a",
-		nil,
-		map[string]dr.Dr{
-			"a": dr.Dr{
-				Category:    "a",
-				ID:          "a",
-				Description: "Item-a.a",
-				Reusable:    true,
-			},
-			"b": dr.Dr{
-				Category:    "a",
-				ID:          "b",
-				Description: "Item-a.b",
+				TTL:         18,
 			},
 		}},
 }
@@ -258,7 +234,7 @@ var listForTTLTests = []struct {
 func TestInterface(t *testing.T, tester Tester) {
 
 	// initialisation
-	storage := tester.NewForTest() // expect New() blocks until initialisation complete
+	storage := tester.New() // expect New() blocks until initialisation complete
 	result := (storage.HealthCheck() == nil)
 	processResult(t, result, "storage healthy after initialisation")
 

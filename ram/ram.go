@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/jonboulle/clockwork"
 	"github.com/timdrysdale/dr"
@@ -32,7 +33,7 @@ type RamStorage struct {
 }
 
 func (r *RamStorage) Now() int64 {
-	return r.clock.Now().Unix()
+	return time.Now().Unix()
 }
 
 func (r *RamStorage) Add(resource dr.Dr) error {
@@ -62,7 +63,11 @@ func (r *RamStorage) Add(resource dr.Dr) error {
 		r.resources[resource.Category] = make(map[string]expiringResource)
 	}
 
-	validUntil := r.Now() + resource.TTL
+	validUntil := int64(0) //default to living forever
+
+	if resource.TTL > 0 {
+		validUntil = r.Now() + resource.TTL
+	}
 
 	r.resources[resource.Category][resource.ID] = expiringResource{resource: resource, validUntil: validUntil}
 
@@ -73,8 +78,8 @@ func (r *RamStorage) List(category string) (error, map[string]dr.Dr) {
 
 	publicList := make(map[string]dr.Dr)
 
-	r.RLock()
-	defer r.RUnlock()
+	r.Lock() //need a write lock because we might clean stale entries
+	defer r.Unlock()
 
 	// existence check
 	if _, ok := r.resources[category]; !ok {
@@ -88,10 +93,33 @@ func (r *RamStorage) List(category string) (error, map[string]dr.Dr) {
 
 	// return list omitting details of the resource
 
-	for id, resource := range r.resources[category] {
-		publicResource := resource.resource
-		publicResource.Resource = ""
-		publicList[id] = publicResource
+	for id, expiringResource := range r.resources[category] {
+
+		//clean stale entries
+
+		expired := false
+
+		if expiringResource.validUntil > 0 {
+			// expirable
+			newTTL := expiringResource.validUntil - r.Now()
+			if newTTL < 0 {
+				expired = true
+				delete(r.resources[category], id)
+			} else {
+				// update TTL
+				temp := r.resources[category][id]
+				temp.resource.TTL = newTTL
+				r.resources[category][id] = temp
+			}
+
+		}
+
+		if !expired {
+			publicResource := r.resources[category][id].resource
+			publicResource.Resource = ""
+			publicList[id] = publicResource
+		}
+
 	}
 
 	return nil, publicList
@@ -164,14 +192,6 @@ func (r *RamStorage) Categories() (error, map[string]int) {
 }
 
 func New() dr.Storage {
-	r := RamStorage{resources: make(map[string]map[string]expiringResource), clock: clockwork.NewRealClock()}
+	r := RamStorage{resources: make(map[string]map[string]expiringResource)}
 	return &r
 }
-
-func NewForTest() dr.Storage {
-	r := RamStorage{resources: make(map[string]map[string]expiringResource), clock: clockwork.NewRealClock()}
-	Return & r
-}
-
-//	thoughts ... some external libraries probably won't permit mocking of time, e.g. redis db
-//   sooooooooo .... clockwork.NewFakeClock() isn't much help....
