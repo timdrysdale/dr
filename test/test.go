@@ -178,6 +178,15 @@ var addForTTLTests = []struct {
 			TTL:         20,
 		},
 		nil},
+	{"add resource a.e for ttl test",
+		dr.Dr{
+			Category:    "a",
+			ID:          "e",
+			Resource:    "Resource-a.e",
+			Description: "Item-a.e",
+			TTL:         3,
+		},
+		nil},
 }
 
 var listForTTLTests = []struct {
@@ -210,8 +219,14 @@ var listForTTLTests = []struct {
 				Description: "Item-a.d",
 				TTL:         20,
 			},
+			"e": dr.Dr{
+				Category:    "a",
+				ID:          "e",
+				Description: "Item-a.e",
+				TTL:         3,
+			},
 		}},
-	{"list after 2.001 sec shows a.a and a.d with updated TTL",
+	{"list after 2.001 sec shows a.a & a.d + a.e with updated TTL",
 		2000 * time.Millisecond,
 		"a",
 		nil,
@@ -227,6 +242,64 @@ var listForTTLTests = []struct {
 				ID:          "d",
 				Description: "Item-a.d",
 				TTL:         18,
+			},
+			"e": dr.Dr{
+				Category:    "a",
+				ID:          "e",
+				Description: "Item-a.e",
+				TTL:         1,
+			},
+		}},
+}
+
+var postTTLGetTests = []struct {
+	name             string
+	category         string
+	ID               string
+	errExpected      error
+	resourceExpected dr.Dr
+}{
+	{"get resource a.a",
+		"a",
+		"a",
+		nil,
+		dr.Dr{
+			Category:    "a",
+			ID:          "a",
+			Description: "Item-a.a",
+			Resource:    "Resource-a.a",
+			Reusable:    true,
+		},
+	},
+	{"get resource a.e",
+		"a",
+		"e",
+		dr.ErrNoSuchID,
+		dr.Dr{},
+	},
+}
+
+var listAfterTTLTests = []struct {
+	name         string
+	category     string
+	errExpected  error
+	listExpected map[string]dr.Dr
+}{
+	{"list after TTL tests shows a.a & a.d with updated TTL",
+		"a",
+		nil,
+		map[string]dr.Dr{
+			"a": dr.Dr{
+				Category:    "a",
+				ID:          "a",
+				Description: "Item-a.a",
+				Reusable:    true,
+			},
+			"d": dr.Dr{
+				Category:    "a",
+				ID:          "d",
+				Description: "Item-a.d",
+				TTL:         16,
 			},
 		}},
 }
@@ -309,6 +382,33 @@ func TestInterface(t *testing.T, tester Tester) {
 	// post-get list tests
 	for _, test := range listForTTLTests {
 		time.Sleep(test.duration)
+		err, list := storage.List(test.category)
+		result = (err == test.errExpected) && (reflect.DeepEqual(list, test.listExpected))
+		if debugTest {
+			t.Log(list)
+			t.Log(test.listExpected)
+			t.Log(reflect.DeepEqual(list, test.listExpected))
+		}
+		processResult(t, result, test.name)
+	}
+
+	// await a.e expiring since last list, to ensure Get() is checking its stale
+	time.Sleep(2000 * time.Millisecond)
+	for _, test := range postTTLGetTests {
+		err, resource := storage.Get(test.category, test.ID)
+		result = (err == test.errExpected) && (reflect.DeepEqual(resource, test.resourceExpected))
+		if debugTest {
+			t.Log(err)
+			t.Log(test.errExpected)
+			t.Log(resource)
+			t.Log(test.resourceExpected)
+			t.Log(reflect.DeepEqual(resource, test.resourceExpected))
+		}
+		processResult(t, result, test.name)
+	}
+
+	// post-get list tests
+	for _, test := range listAfterTTLTests {
 		err, list := storage.List(test.category)
 		result = (err == test.errExpected) && (reflect.DeepEqual(list, test.listExpected))
 		if debugTest {

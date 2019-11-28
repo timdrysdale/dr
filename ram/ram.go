@@ -138,15 +138,45 @@ func (r *RamStorage) Get(category string, id string) (error, dr.Dr) {
 	}
 
 	// ID existence check
-	if resource, ok := r.resources[category][id]; ok {
+	if expiringResource, ok := r.resources[category][id]; ok {
 
-		if !resource.resource.Reusable {
-			delete(r.resources[category], id)
+		//clean stale entry if found
+
+		expired := false
+
+		if expiringResource.validUntil > 0 {
+			// expirable
+			newTTL := expiringResource.validUntil - r.Now()
+			if newTTL < 0 {
+				expired = true
+				delete(r.resources[category], id)
+			} else {
+				// update TTL
+				temp := r.resources[category][id]
+				temp.resource.TTL = newTTL
+				r.resources[category][id] = temp
+			}
+
 		}
 
-		return nil, resource.resource
+		if expired {
+
+			// expired since last clean, don't return it
+			return dr.ErrNoSuchID, emptyResource
+
+		} else {
+
+			// delete if single use
+			if !expiringResource.resource.Reusable {
+				delete(r.resources[category], id)
+			}
+
+			// return resource
+			return nil, expiringResource.resource
+		}
 
 	} else {
+		// not found
 		return dr.ErrNoSuchID, emptyResource
 	}
 
