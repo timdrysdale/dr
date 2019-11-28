@@ -18,7 +18,7 @@ type Tester struct {
 	// whatever you need. Leave nil if function does not apply
 }
 
-var debugTest = true
+var debugTest = false
 
 var addSanityTests = []struct {
 	name     string
@@ -374,6 +374,9 @@ func TestInterface(t *testing.T, tester Tester) {
 		processResult(t, result, test.name)
 	}
 
+	if testing.Short() {
+		t.Skip("**SKIP** skipping TTL tests - check before releasing though!")
+	}
 	// add resources for TTL test
 	for _, test := range addForTTLTests {
 		result = reflect.DeepEqual(storage.Add(test.resource), test.expected)
@@ -421,11 +424,11 @@ func TestInterface(t *testing.T, tester Tester) {
 	}
 
 	// await a.d expiring to check that categories cleans stale entries
-	/*time.Sleep(2000 * time.Millisecond)
+	time.Sleep(2000 * time.Millisecond)
 	err, categories = storage.Categories()
 	result = (err == nil) && reflect.DeepEqual(categories, expectedCategoriesAfterTTL)
 	processResult(t, result, "map categories and ignore stale resource")
-	*/
+
 }
 
 func processResult(t *testing.T, result bool, name string) {
@@ -435,16 +438,3 @@ func processResult(t *testing.T, result bool, name string) {
 		t.Errorf("**FAIL** %s\n", name)
 	}
 }
-
-// Testing tips https://medium.com/@povilasve/go-advanced-tips-tricks-a872503ac859
-
-//https://www.toptal.com/go/your-introductory-course-to-testing-with-go
-
-/*
-A great memory-free trick for ensuring that the interface is satisfied at run time is to insert the following into our code:
-
-var _ io.Reader = (*MockReader)(nil)
-
-This checks the assertion but doesn’t allocate anything, which lets us make sure that the interface is correctly implemented at compile time, before the program actually runs into any functionality using it. An optional trick, but helpful.
-
-*/

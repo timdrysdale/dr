@@ -10,17 +10,6 @@ import (
 	"github.com/timdrysdale/dr"
 )
 
-/*
-
-Mock time - where to store the clock, and how to sub a real clock in production?
-use the New constructor for this ...
-
-https://github.com/jonboulle/clockwork
-
-or.... is this an implementation detail that should not spill into the interface?
-
-*/
-
 type expiringResource struct {
 	resource   dr.Dr
 	validUntil int64
@@ -206,28 +195,24 @@ func (r *RamStorage) Reset() error {
 func (r *RamStorage) Categories() (error, map[string]int) {
 
 	categoryMap := make(map[string]int)
-	/*categoryList := []string{}
+	categoryList := []string{}
 
-	r.RLock()
-
-
-
-	for category, _ := range r.resources {
-		categoryList = append(categoryList, category)
-	}
-
-	r.RUnlock()
-
-	//for _, category := range categoryList {
-	//	_, _ = r.List(category) //use list to do stale cleaning
-	//}
-	*/
 	r.RLock()
 	numCategories := len(r.resources)
 	r.RUnlock()
 
 	if numCategories == 0 {
 		return dr.ErrEmptyStorage, categoryMap
+	}
+
+	r.RLock()
+	for category, _ := range r.resources {
+		categoryList = append(categoryList, category)
+	}
+	r.RUnlock()
+
+	for _, category := range categoryList {
+		_, _ = r.List(category) //use list to do stale cleaning
 	}
 
 	r.RLock()
