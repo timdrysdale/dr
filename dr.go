@@ -2,6 +2,8 @@ package dr
 
 import "errors"
 
+//TODO put error as last return value to be idomatic...
+
 type Storage interface {
 	Add(dr Dr) error
 	Categories() (error, map[string]int)

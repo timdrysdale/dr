@@ -1,2 +1,59 @@
 // package restapi provides a REST-inspired API via http server
 package restapi
+
+import (
+	"net/http"
+
+	"github.com/timdrysdale/dr"
+)
+
+func (store *dr.Storage) handleGetRoot(w http.ResponseWriter, r *http.Request) {
+	// list everything we have, in compact form!
+	err, everything := store.Categories()
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+}
+
+/*
+
+
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	output, err := json.Marshal(app.Websocket.Rules[id])
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	w.Header().Set("content-type", "application/json")
+	w.Write(output)
+}
+
+
+func
+	router.HandleFunc(root, handleRoot)
+
+	// on root
+	router.HandleFunc(root+resources, handleDeleteRoot).Methods("DELETE")
+	router.HandleFunc(root+resources, handleGetRoot).Methods("GET")
+
+	// on a specific category
+	router.HandleFunc(root+resources+category, handleDeleteCategory).Methods("DELETE")
+	router.HandleFunc(root+resources+category, handleGetCategory).Methods("GET")
+	router.HandleFunc(root+resources+category, handlePostCategory).Methods("POST", "UPDATE")
+
+	// on a specific id
+	router.HandleFunc(root+resources+category+id, handleDeleteID).Methods("DELETE")
+	router.HandleFunc(root+resources+category+id, handleGetID).Methods("GET")
+	router.HandleFunc(root+resources+category+id, handlePostID).Methods("POST", "UPDATE")
+
+	// other
+	router.HandleFunc(root+"/healthcheck", handleHealthcheck).Methods("GET")
+
+	return &router
+}
+*/
