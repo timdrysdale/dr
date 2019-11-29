@@ -149,6 +149,7 @@ func (r *RamStorage) Get(category string, id string) (dr.Dr, error) {
 				temp := r.resources[category][id]
 				temp.resource.TTL = newTTL
 				r.resources[category][id] = temp
+				expiringResource.resource.TTL = newTTL
 			}
 
 		}
@@ -166,8 +167,9 @@ func (r *RamStorage) Get(category string, id string) (dr.Dr, error) {
 				delete(r.resources[category], id)
 			}
 
-			// return resource
+			// return resource (with up-to-date TTL)
 			return expiringResource.resource, nil
+
 		}
 
 	} else {

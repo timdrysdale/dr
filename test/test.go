@@ -470,8 +470,26 @@ func TestInterface(t *testing.T, tester Tester) {
 		processResult(t, result, test.name)
 	}
 
-	// await a.d expiring to check that categories cleans stale entries
+	//accurate TTL on GET?
+	originalTTL := int64(99)
+	err = storage.Add(dr.Dr{
+		Category:    "x",
+		ID:          "y",
+		Description: "",
+		Resource:    "",
+		Reusable:    true,
+		TTL:         originalTTL,
+	})
+
+	// await a.d expiring and x.y TTL reducing
 	time.Sleep(2000 * time.Millisecond)
+
+	// TTL must be lower than original TTL
+	resource, err := storage.Get("x", "y")
+	result = (err == nil) && (resource.TTL < originalTTL)
+	processResult(t, result, "first GET returns up-to-date TTL")
+
+	// a.d expired: check that categories cleans stale entries
 	categories, err = storage.Categories()
 	result = (err == nil) && reflect.DeepEqual(categories, expectedCategoriesAfterTTL)
 	processResult(t, result, "map categories and ignore stale resource")
