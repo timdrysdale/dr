@@ -38,22 +38,6 @@ func New(store dr.Storage) *mux.Router {
 			handleResourcesGet(w, r, store)
 		}).Methods("GET")
 
-	// on a specific category
-	router.HandleFunc(pathCategory,
-		func(w http.ResponseWriter, r *http.Request) {
-			handleCategoryDelete(w, r, store)
-		}).Methods("DELETE")
-
-	router.HandleFunc(pathCategory,
-		func(w http.ResponseWriter, r *http.Request) {
-			handleCategoryGet(w, r, store)
-		}).Methods("GET")
-
-	router.HandleFunc(pathCategory,
-		func(w http.ResponseWriter, r *http.Request) {
-			handleCategoryPost(w, r, store)
-		}).Methods("POST", "UPDATE")
-
 	// on a specific ID
 	router.HandleFunc(pathID,
 		func(w http.ResponseWriter, r *http.Request) {
@@ -68,6 +52,22 @@ func New(store dr.Storage) *mux.Router {
 	router.HandleFunc(pathID,
 		func(w http.ResponseWriter, r *http.Request) {
 			handleIDPost(w, r, store)
+		}).Methods("POST", "UPDATE")
+
+	// on a specific category
+	router.HandleFunc(pathCategory,
+		func(w http.ResponseWriter, r *http.Request) {
+			handleCategoryDelete(w, r, store)
+		}).Methods("DELETE")
+
+	router.HandleFunc(pathCategory,
+		func(w http.ResponseWriter, r *http.Request) {
+			handleCategoryGet(w, r, store)
+		}).Methods("GET")
+
+	router.HandleFunc(pathCategory,
+		func(w http.ResponseWriter, r *http.Request) {
+			handleCategoryPost(w, r, store)
 		}).Methods("POST", "UPDATE")
 
 	// on other

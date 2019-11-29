@@ -124,7 +124,7 @@ func handleCategoryPost(w http.ResponseWriter, r *http.Request, store dr.Storage
 func handleHealthcheck(w http.ResponseWriter, r *http.Request, store dr.Storage) {
 	err := store.HealthCheck()
 	if err == nil {
-		w.Write([]byte("{\"status\":\"ok\"}\n"))
+		w.Write([]byte("{\"status\":\"ok\"}"))
 	} else {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
