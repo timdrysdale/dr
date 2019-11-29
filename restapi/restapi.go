@@ -3,6 +3,7 @@ package restapi
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -81,20 +82,58 @@ func handleCategoryDelete(w http.ResponseWriter, r *http.Request, store dr.Stora
 	}
 }
 
-/*
-
+func handleCategoryPost(w http.ResponseWriter, r *http.Request, store dr.Storage) {
 	vars := mux.Vars(r)
-	id := vars["id"]
+	category := vars["category"]
 
-	output, err := json.Marshal(app.Websocket.Rules[id])
+	b, err := ioutil.ReadAll(r.Body)
+
+	//log.Println(string(b))
+
+	// see stackoverflow.com/questions/11066946/partly-json-unmarshal-into-a-map-in-go
+	var resources map[string]*json.RawMessage
+	var resource dr.Dr
+
+	err = json.Unmarshal(b, &resources)
+
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("content-type", "application/json")
-	w.Write(output)
+
+	//log.Println(resources)
+	//log.Println(category)
+
+	for id, _ := range resources {
+
+		err = json.Unmarshal(*resources[id], &resource)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		//log.Println(err)
+		//log.Println(resource)
+
+		if resource.Category != category { //avoid cross end-point permission attacks
+			http.Error(w, dr.ErrIllegalCategory.Error()+":"+resource.Category, http.StatusInternalServerError)
+			return
+		}
+		if resource.ID != id { //conflicted id
+			http.Error(w, dr.ErrUndefinedID.Error()+": did you mean "+resource.ID+" or "+id+"?", http.StatusInternalServerError)
+			return
+		}
+		err = store.Add(resource)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+	}
 }
 
+/*
 
 func
 	router.HandleFunc(root, handleRoot)

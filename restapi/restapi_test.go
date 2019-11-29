@@ -1,6 +1,7 @@
 package restapi
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -147,6 +148,7 @@ func TestHandleCategoryDelete(t *testing.T) {
 
 	// set up store
 	m := mock.New()
+
 	resource := dr.Dr{
 		Category:    "cat",
 		Description: "desc",
@@ -154,10 +156,12 @@ func TestHandleCategoryDelete(t *testing.T) {
 		Resource:    "res",
 		Reusable:    true,
 		TTL:         123}
+
 	m.SetResource(resource)
+
 	//let's hope API doesn't notice that we've got inconsistency between
 	//list ID and resource.ID - else need to enhance mock to give
-	//multiple responses for multiple calls
+	//multiple responses for multiple calls (#TODO but hopefully #YAGNI!)
 	ID1 := "some_id"
 	ID2 := "other_id"
 	l := map[string]dr.Dr{ID1: resource, ID2: resource}
@@ -194,4 +198,151 @@ func TestHandleCategoryDelete(t *testing.T) {
 	}
 
 	checkStatusCodeIs(t, resp, http.StatusOK)
+}
+
+func TestHandleCategoryPost(t *testing.T) {
+
+	// set up store
+	m := mock.New()
+
+	ID1 := "some_id"
+	ID2 := "other_id"
+
+	resource1 := dr.Dr{
+		Category:    "cat23",
+		Description: "desc",
+		ID:          ID1,
+		Resource:    "res",
+		Reusable:    true,
+		TTL:         123}
+
+	resource2 := dr.Dr{
+		Category:    "cat23",
+		Description: "desc",
+		ID:          ID2,
+		Resource:    "res",
+		Reusable:    true,
+		TTL:         123}
+
+	list, err := json.Marshal(map[string]dr.Dr{ID1: resource1, ID2: resource2})
+	if err != nil {
+		t.Error(err)
+	}
+	// set up req & resp
+	resp := httptest.NewRecorder()
+	category := "cat23"
+	r := bytes.NewReader(list)
+	req, err := http.NewRequest("POST", "", r)
+	if err != nil {
+		t.Error(err)
+	}
+	req = mux.SetURLVars(req, map[string]string{
+		"category": category,
+	})
+
+	handleCategoryPost(resp, req, m)
+
+	if m.Method["Add"] != 2 {
+		t.Errorf("Didn't call Add once, but %d times\n", m.Method["List"])
+	}
+
+	checkStatusCodeIs(t, resp, http.StatusOK)
+}
+
+func TestHandleCategoryPostCategoryError(t *testing.T) {
+
+	// set up store
+	m := mock.New()
+
+	ID1 := "some_id"
+	ID2 := "other_id"
+
+	resource1 := dr.Dr{
+		Category:    "secretCategory!", //Here's the cross end-point attack!
+		Description: "desc",
+		ID:          ID1,
+		Resource:    "res",
+		Reusable:    true,
+		TTL:         123}
+
+	resource2 := dr.Dr{
+		Category:    "cat23",
+		Description: "desc",
+		ID:          ID2,
+		Resource:    "res",
+		Reusable:    true,
+		TTL:         123}
+
+	list, err := json.Marshal(map[string]dr.Dr{ID1: resource1, ID2: resource2})
+	if err != nil {
+		t.Error(err)
+	}
+	// set up req & resp
+	resp := httptest.NewRecorder()
+	category := "cat23"
+	r := bytes.NewReader(list)
+	req, err := http.NewRequest("POST", "", r)
+	if err != nil {
+		t.Error(err)
+	}
+	req = mux.SetURLVars(req, map[string]string{
+		"category": category,
+	})
+
+	handleCategoryPost(resp, req, m)
+
+	if m.Method["Add"] == 2 {
+		t.Errorf("Didn't call Add once, but %d times\n", m.Method["List"])
+	}
+	checkStatusCodeIs(t, resp, http.StatusInternalServerError)
+	checkBodyEquals(t, resp, dr.ErrIllegalCategory.Error()+":secretCategory!\n")
+}
+
+func TestHandleCategoryPostIDError(t *testing.T) {
+
+	// set up store
+	m := mock.New()
+
+	ID1 := "some_id"
+	ID2 := "other_id"
+
+	resource1 := dr.Dr{
+		Category:    "cat23",
+		Description: "desc",
+		ID:          ID1,
+		Resource:    "res",
+		Reusable:    true,
+		TTL:         123}
+
+	resource2 := dr.Dr{
+		Category:    "cat23",
+		Description: "desc",
+		ID:          ID1, //Here's the deliberate error!
+		Resource:    "res",
+		Reusable:    true,
+		TTL:         123}
+
+	list, err := json.Marshal(map[string]dr.Dr{ID1: resource1, ID2: resource2})
+	if err != nil {
+		t.Error(err)
+	}
+	// set up req & resp
+	resp := httptest.NewRecorder()
+	category := "cat23"
+	r := bytes.NewReader(list)
+	req, err := http.NewRequest("POST", "", r)
+	if err != nil {
+		t.Error(err)
+	}
+	req = mux.SetURLVars(req, map[string]string{
+		"category": category,
+	})
+
+	handleCategoryPost(resp, req, m)
+
+	if m.Method["Add"] == 2 {
+		t.Errorf("Didn't call Add once, but %d times\n", m.Method["List"])
+	}
+	checkStatusCodeIs(t, resp, http.StatusInternalServerError)
+	checkBodyEquals(t, resp, dr.ErrUndefinedID.Error()+": did you mean some_id or other_id?\n")
 }
