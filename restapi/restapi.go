@@ -2,24 +2,31 @@
 package restapi
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/timdrysdale/dr"
 )
 
-func (store *dr.Storage) handleGetRoot(w http.ResponseWriter, r *http.Request) {
+func handleGetRoot(w http.ResponseWriter, r *http.Request, store dr.Storage) {
 	// list everything we have, in compact form!
-	err, everything := store.Categories()
+	everything, err := store.Categories()
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 
+	output, err := json.Marshal(everything)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	w.Header().Set("content-type", "application/json")
+	w.Write(output)
 }
 
 /*
-
-
 
 	vars := mux.Vars(r)
 	id := vars["id"]

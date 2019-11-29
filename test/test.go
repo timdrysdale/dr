@@ -350,7 +350,7 @@ func TestInterface(t *testing.T, tester Tester) {
 	processResult(t, result, "storage healthy after reset")
 
 	// categories on empty storage
-	err, categories := storage.Categories()
+	categories, err := storage.Categories()
 	result = (err == dr.ErrEmptyStorage) && reflect.DeepEqual(categories, map[string]int{})
 	processResult(t, result, "map categories throws ErrEmptyStorage when store empty")
 
@@ -362,7 +362,7 @@ func TestInterface(t *testing.T, tester Tester) {
 
 	// list tests
 	for _, test := range listTests {
-		err, list := storage.List(test.category)
+		list, err := storage.List(test.category)
 		result = (err == test.errExpected) && (reflect.DeepEqual(list, test.listExpected))
 		if debugTest {
 			t.Log(list)
@@ -373,13 +373,13 @@ func TestInterface(t *testing.T, tester Tester) {
 	}
 
 	// categories test
-	err, categories = storage.Categories()
+	categories, err = storage.Categories()
 	result = (err == nil) && reflect.DeepEqual(categories, expectedCategories)
 	processResult(t, result, "map categories and number of items therein")
 
 	// get tests
 	for _, test := range getTests {
-		err, resource := storage.Get(test.category, test.ID)
+		resource, err := storage.Get(test.category, test.ID)
 		result = (err == test.errExpected) && (reflect.DeepEqual(resource, test.resourceExpected))
 		if debugTest {
 			t.Log(resource)
@@ -391,7 +391,7 @@ func TestInterface(t *testing.T, tester Tester) {
 
 	// post-get list tests
 	for _, test := range postGetListTests {
-		err, list := storage.List(test.category)
+		list, err := storage.List(test.category)
 		result = (err == test.errExpected) && (reflect.DeepEqual(list, test.listExpected))
 		if debugTest {
 			t.Log(list)
@@ -405,7 +405,7 @@ func TestInterface(t *testing.T, tester Tester) {
 	defer func() {
 
 		for _, test := range postTTLDeleteTests {
-			err, resource := storage.Delete(test.category, test.ID)
+			resource, err := storage.Delete(test.category, test.ID)
 			result = (err == test.errExpected) && (reflect.DeepEqual(resource, test.resourceExpected))
 			if debugTest {
 				t.Log(err)
@@ -433,7 +433,7 @@ func TestInterface(t *testing.T, tester Tester) {
 	// post-get list tests
 	for _, test := range listForTTLTests {
 		time.Sleep(test.duration)
-		err, list := storage.List(test.category)
+		list, err := storage.List(test.category)
 		result = (err == test.errExpected) && (reflect.DeepEqual(list, test.listExpected))
 		if debugTest {
 			t.Log(list)
@@ -446,7 +446,7 @@ func TestInterface(t *testing.T, tester Tester) {
 	// await a.e expiring since last list, to ensure Get() is checking its stale
 	time.Sleep(2000 * time.Millisecond)
 	for _, test := range postTTLGetTests {
-		err, resource := storage.Get(test.category, test.ID)
+		resource, err := storage.Get(test.category, test.ID)
 		result = (err == test.errExpected) && (reflect.DeepEqual(resource, test.resourceExpected))
 		if debugTest {
 			t.Log(err)
@@ -460,7 +460,7 @@ func TestInterface(t *testing.T, tester Tester) {
 
 	// post-get list tests
 	for _, test := range listAfterTTLTests {
-		err, list := storage.List(test.category)
+		list, err := storage.List(test.category)
 		result = (err == test.errExpected) && (reflect.DeepEqual(list, test.listExpected))
 		if debugTest {
 			t.Log(list)
@@ -472,7 +472,7 @@ func TestInterface(t *testing.T, tester Tester) {
 
 	// await a.d expiring to check that categories cleans stale entries
 	time.Sleep(2000 * time.Millisecond)
-	err, categories = storage.Categories()
+	categories, err = storage.Categories()
 	result = (err == nil) && reflect.DeepEqual(categories, expectedCategoriesAfterTTL)
 	processResult(t, result, "map categories and ignore stale resource")
 

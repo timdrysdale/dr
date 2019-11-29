@@ -2,15 +2,13 @@ package dr
 
 import "errors"
 
-//TODO put error as last return value to be idomatic...
-
 type Storage interface {
 	Add(dr Dr) error
-	Categories() (error, map[string]int)
-	Delete(category string, id string) (error, Dr)
-	Get(category string, id string) (error, Dr)
+	Categories() (map[string]int, error)
+	Delete(category string, id string) (Dr, error)
+	Get(category string, id string) (Dr, error)
 	HealthCheck() error
-	List(category string) (error, map[string]Dr)
+	List(category string) (map[string]Dr, error)
 	Reset() error
 }
 
