@@ -11,24 +11,28 @@ import (
 const pageNotFound = "page not found"
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, pageNotFound, 404)
+	http.Error(w, pageNotFound, http.StatusNotFound)
 }
 
 func handleResourcesDelete(w http.ResponseWriter, r *http.Request, store dr.Storage) {
-	http.Error(w, pageNotFound, 404)
+	err := store.Reset()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func handleResourcesGet(w http.ResponseWriter, r *http.Request, store dr.Storage) {
 	// list everything we have, in compact form!
 	everything, err := store.Categories()
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	output, err := json.Marshal(everything)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

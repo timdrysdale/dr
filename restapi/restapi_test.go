@@ -9,6 +9,8 @@ import (
 	"github.com/timdrysdale/dr/mock"
 )
 
+const overlyStrict = true
+
 func TestHandleRoot(t *testing.T) {
 
 	// set up req & resp
@@ -20,10 +22,7 @@ func TestHandleRoot(t *testing.T) {
 
 	handleRoot(resp, req)
 
-	checkStatusCodeIs(t, resp, 404)
-	checkContentTypeContains(t, resp, "text/plain")
-	checkBodyEquals(t, resp, pageNotFound+"\n")
-
+	checkStatusCodeIs(t, resp, http.StatusNotFound)
 }
 
 func TestHandleResourcesGet(t *testing.T) {
@@ -42,7 +41,7 @@ func TestHandleResourcesGet(t *testing.T) {
 
 	handleResourcesGet(resp, req, m)
 
-	checkStatusCodeIs(t, resp, 200)
+	checkStatusCodeIs(t, resp, http.StatusOK)
 	checkContentTypeContains(t, resp, "application/json")
 	checkBodyEquals(t, resp, `{"a":1,"b":2}`)
 
@@ -65,7 +64,9 @@ func TestHandleResourcesGetEmptyStorage(t *testing.T) {
 
 	handleResourcesGet(resp, req, m)
 
-	checkStatusCodeIs(t, resp, 500)
-	checkContentTypeContains(t, resp, "text/plain")
-	checkBodyEquals(t, resp, dr.ErrEmptyStorage.Error()+"\n")
+	checkStatusCodeIs(t, resp, http.StatusInternalServerError)
+	if overlyStrict {
+		checkContentTypeContains(t, resp, "text/plain")
+		checkBodyEquals(t, resp, dr.ErrEmptyStorage.Error()+"\n")
+	}
 }
