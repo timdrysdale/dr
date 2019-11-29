@@ -7,25 +7,27 @@ import (
 	"github.com/timdrysdale/dr"
 )
 
-// RESTful API methods
+// RESTful API methods from general to specific
 //
-// DELETE, GET, POST, UPDATE  /api/resources/<category>/<id>
-// DELETE, GET, POST, UPDATE  /api/resources/<category>
-// DELETE, GET                /api/resources/
-//
+// ------  GET  ----  ------  /api/healthcheck
+// DELETE  GET  ----  ------  /api/resources/
+// DELETE  GET  POST  UPDATE  /api/resources/<category>
+// DELETE  GET  POST  UPDATE  /api/resources/<category>/<id>
 
 const pathApi = "/api"
 const pathResources = pathApi + "/resources"
 const pathCategory = pathResources + `/{category:[a-zA-Z0-9\-\/]+}`
 const pathID = pathCategory + `/{id:[a-zA-Z0-9\-\/]+}`
+const pathHealthcheck = pathApi + "/healthcheck"
 
-func router(store dr.Storage) *mux.Router {
+func New(store dr.Storage) *mux.Router {
 
 	var router = mux.NewRouter()
 
+	// on root
 	router.HandleFunc("/", handleRoot)
 
-	// on root
+	// on all resources
 	router.HandleFunc(pathResources,
 		func(w http.ResponseWriter, r *http.Request) {
 			handleResourcesDelete(w, r, store)
@@ -37,17 +39,42 @@ func router(store dr.Storage) *mux.Router {
 		}).Methods("GET")
 
 	// on a specific category
-	//router.HandleFunc(root+resources+category, handleDeleteCategory).Methods("DELETE")
-	//router.HandleFunc(root+resources+category, handleGetCategory).Methods("GET")
-	//router.HandleFunc(root+resources+category, handlePostCategory).Methods("POST", "UPDATE")
+	router.HandleFunc(pathCategory,
+		func(w http.ResponseWriter, r *http.Request) {
+			handleCategoryDelete(w, r, store)
+		}).Methods("DELETE")
 
-	// on a specific id
-	//router.HandleFunc(root+resources+category+id, handleDeleteID).Methods("DELETE")
-	//router.HandleFunc(root+resources+category+id, handleGetID).Methods("GET")
-	//router.HandleFunc(root+resources+category+id, handlePostID).Methods("POST", "UPDATE")
+	router.HandleFunc(pathCategory,
+		func(w http.ResponseWriter, r *http.Request) {
+			handleCategoryGet(w, r, store)
+		}).Methods("GET")
 
-	// other
-	//router.HandleFunc(root+"/healthcheck", handleHealthcheck).Methods("GET")
+	router.HandleFunc(pathCategory,
+		func(w http.ResponseWriter, r *http.Request) {
+			handleCategoryPost(w, r, store)
+		}).Methods("POST", "UPDATE")
+
+	// on a specific ID
+	router.HandleFunc(pathID,
+		func(w http.ResponseWriter, r *http.Request) {
+			handleIDDelete(w, r, store)
+		}).Methods("DELETE")
+
+	router.HandleFunc(pathID,
+		func(w http.ResponseWriter, r *http.Request) {
+			handleIDGet(w, r, store)
+		}).Methods("GET")
+
+	router.HandleFunc(pathID,
+		func(w http.ResponseWriter, r *http.Request) {
+			handleIDPost(w, r, store)
+		}).Methods("POST", "UPDATE")
+
+	// on other
+	router.HandleFunc(pathHealthcheck,
+		func(w http.ResponseWriter, r *http.Request) {
+			handleHealthcheck(w, r, store)
+		}).Methods("GET")
 
 	return router
 }
