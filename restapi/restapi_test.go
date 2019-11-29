@@ -346,3 +346,232 @@ func TestHandleCategoryPostIDError(t *testing.T) {
 	checkStatusCodeIs(t, resp, http.StatusInternalServerError)
 	checkBodyEquals(t, resp, dr.ErrUndefinedID.Error()+": did you mean some_id or other_id?\n")
 }
+
+func TestHandleIDDelete(t *testing.T) {
+
+	// set up store
+	m := mock.New()
+	category := "some_category"
+	ID := "some_id"
+	resource := dr.Dr{
+		Category:    category,
+		Description: "desc",
+		ID:          ID,
+		Resource:    "res",
+		Reusable:    true,
+		TTL:         123}
+
+	m.SetResource(resource)
+
+	// set up req & resp
+	resp := httptest.NewRecorder()
+	req, err := http.NewRequest("DELETE", "", nil)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	req = mux.SetURLVars(req, map[string]string{
+		"category": category,
+		"id":       ID,
+	})
+
+	handleIDDelete(resp, req, m)
+
+	if m.Method["Delete"] != 1 {
+		t.Errorf("Didn't call Delete once, but %d times\n", m.Method["Delete"])
+	}
+
+	if m.GetCategory() != category {
+		t.Errorf(".Delete() called with wrong category:\ngot:%s\nexp:%s\n",
+			m.GetCategory(), category)
+	}
+
+	if m.GetID() != ID {
+		t.Errorf(".Delete() called with wrong ID:\ngot:%s\nexp:%s\n",
+			m.GetID(), ID)
+	}
+
+	checkStatusCodeIs(t, resp, http.StatusOK)
+	checkBodyEquals(t, resp, "") //don't return the resource, could be trying to recover a resource issue by deleting a huge resource etc
+}
+
+func TestHandleIDGet(t *testing.T) {
+
+	// set up store
+	m := mock.New()
+	category := "some_category"
+	ID := "some_id"
+	resource := dr.Dr{
+		Category:    category,
+		Description: "desc",
+		ID:          ID,
+		Resource:    "res",
+		Reusable:    true,
+		TTL:         123}
+	m.SetResource(resource)
+
+	// set up req & resp
+	resp := httptest.NewRecorder()
+	req, err := http.NewRequest("GET", "", nil)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	req = mux.SetURLVars(req, map[string]string{
+		"category": category,
+		"id":       ID,
+	})
+
+	handleIDGet(resp, req, m)
+
+	if m.GetCategory() != category {
+		t.Errorf(".List() called with wrong category:\ngot:%s\nexp:%s\n",
+			m.GetCategory(), category)
+	}
+
+	if m.GetID() != ID {
+		t.Errorf(".Delete() called with wrong ID:\ngot:%s\nexp:%s\n",
+			m.GetID(), ID)
+	}
+
+	if m.Method["Get"] != 1 {
+		t.Errorf("Didn't call Get once, but %d times\n", m.Method["Delete"])
+	}
+
+	obj, err := json.Marshal(resource)
+	if err != nil {
+		t.Errorf("Failed to formulate expected response")
+	}
+	expected := string(obj)
+	checkStatusCodeIs(t, resp, http.StatusOK)
+	checkContentTypeContains(t, resp, "application/json")
+	checkBodyEquals(t, resp, expected)
+
+}
+func TestHandleIDPost(t *testing.T) {
+
+	// set up store
+	m := mock.New()
+
+	ID1 := "some_id"
+	category := "cat23"
+
+	resource1 := dr.Dr{
+		Category:    category,
+		Description: "desc",
+		ID:          ID1,
+		Resource:    "res",
+		Reusable:    true,
+		TTL:         123}
+
+	resource, err := json.Marshal(resource1)
+	if err != nil {
+		t.Error(err)
+	}
+	// set up req & resp
+	resp := httptest.NewRecorder()
+	r := bytes.NewReader(resource)
+	req, err := http.NewRequest("POST", "", r)
+	if err != nil {
+		t.Error(err)
+	}
+	req = mux.SetURLVars(req, map[string]string{
+		"category": category,
+		"id":       ID1,
+	})
+
+	handleIDPost(resp, req, m)
+
+	if m.Method["Add"] != 1 {
+		t.Errorf("Didn't call Add once, but %d times\n", m.Method["List"])
+	}
+
+	if m.GetResource() != resource1 {
+		t.Errorf("Added resource did not match request")
+	}
+
+	checkStatusCodeIs(t, resp, http.StatusOK)
+}
+
+func TestHandleIDPostCategoryError(t *testing.T) {
+
+	// set up store
+	m := mock.New()
+
+	ID1 := "some_id"
+	category := "cat23"
+
+	resource1 := dr.Dr{
+		Category:    "secretCategory!", //attack is here!
+		Description: "desc",
+		ID:          ID1,
+		Resource:    "res",
+		Reusable:    true,
+		TTL:         123}
+
+	resource, err := json.Marshal(resource1)
+	if err != nil {
+		t.Error(err)
+	}
+	// set up req & resp
+	resp := httptest.NewRecorder()
+	r := bytes.NewReader(resource)
+	req, err := http.NewRequest("POST", "", r)
+	if err != nil {
+		t.Error(err)
+	}
+	req = mux.SetURLVars(req, map[string]string{
+		"category": category,
+		"id":       ID1,
+	})
+
+	handleIDPost(resp, req, m)
+
+	if m.Method["Add"] != 0 {
+		t.Errorf("Didn't call Add zero times, but %d times\n", m.Method["List"])
+	}
+
+	checkStatusCodeIs(t, resp, http.StatusInternalServerError)
+	checkBodyEquals(t, resp, dr.ErrIllegalCategory.Error()+":secretCategory!\n")
+}
+
+func TestHandleIDPostIDError(t *testing.T) {
+
+	// set up store
+	m := mock.New()
+
+	ID1 := "some_id"
+	ID2 := "other_id"
+	category := "cat23"
+
+	resource1 := dr.Dr{
+		Category:    category,
+		Description: "desc",
+		ID:          ID1,
+		Resource:    "res",
+		Reusable:    true,
+		TTL:         123}
+
+	resource, err := json.Marshal(resource1)
+	if err != nil {
+		t.Error(err)
+	}
+	// set up req & resp
+	resp := httptest.NewRecorder()
+	r := bytes.NewReader(resource)
+	req, err := http.NewRequest("POST", "", r)
+	if err != nil {
+		t.Error(err)
+	}
+	req = mux.SetURLVars(req, map[string]string{
+		"category": category,
+		"id":       ID2, //deliberately different to resource1
+	})
+
+	handleIDPost(resp, req, m)
+
+	if m.Method["Add"] != 0 {
+		t.Errorf("Didn't call Add zero times, but %d times\n", m.Method["List"])
+	}
+
+	checkStatusCodeIs(t, resp, http.StatusInternalServerError)
+	checkBodyEquals(t, resp, dr.ErrUndefinedID.Error()+": did you mean some_id or other_id?\n")
+}

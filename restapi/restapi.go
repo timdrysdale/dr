@@ -42,26 +42,6 @@ func handleResourcesGet(w http.ResponseWriter, r *http.Request, store dr.Storage
 	w.Write(output)
 }
 
-func handleCategoryGet(w http.ResponseWriter, r *http.Request, store dr.Storage) {
-	vars := mux.Vars(r)
-	category := vars["category"]
-
-	categoryList, err := store.List(category)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	output, err := json.Marshal(categoryList)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("content-type", "application/json")
-	w.Write(output)
-}
-
 func handleCategoryDelete(w http.ResponseWriter, r *http.Request, store dr.Storage) {
 	vars := mux.Vars(r)
 	category := vars["category"]
@@ -82,13 +62,31 @@ func handleCategoryDelete(w http.ResponseWriter, r *http.Request, store dr.Stora
 	}
 }
 
+func handleCategoryGet(w http.ResponseWriter, r *http.Request, store dr.Storage) {
+	vars := mux.Vars(r)
+	category := vars["category"]
+
+	categoryList, err := store.List(category)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	output, err := json.Marshal(categoryList)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("content-type", "application/json")
+	w.Write(output)
+}
+
 func handleCategoryPost(w http.ResponseWriter, r *http.Request, store dr.Storage) {
 	vars := mux.Vars(r)
 	category := vars["category"]
 
 	b, err := ioutil.ReadAll(r.Body)
-
-	//log.Println(string(b))
 
 	// see stackoverflow.com/questions/11066946/partly-json-unmarshal-into-a-map-in-go
 	var resources map[string]*json.RawMessage
@@ -101,9 +99,6 @@ func handleCategoryPost(w http.ResponseWriter, r *http.Request, store dr.Storage
 		return
 	}
 
-	//log.Println(resources)
-	//log.Println(category)
-
 	for id, _ := range resources {
 
 		err = json.Unmarshal(*resources[id], &resource)
@@ -112,9 +107,6 @@ func handleCategoryPost(w http.ResponseWriter, r *http.Request, store dr.Storage
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		//log.Println(err)
-		//log.Println(resource)
 
 		if resource.Category != category { //avoid cross end-point permission attacks
 			http.Error(w, dr.ErrIllegalCategory.Error()+":"+resource.Category, http.StatusInternalServerError)
@@ -131,6 +123,72 @@ func handleCategoryPost(w http.ResponseWriter, r *http.Request, store dr.Storage
 		}
 
 	}
+}
+
+func handleIDDelete(w http.ResponseWriter, r *http.Request, store dr.Storage) {
+	vars := mux.Vars(r)
+	category := vars["category"]
+	ID := vars["id"]
+
+	_, err := store.Delete(category, ID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+}
+
+func handleIDGet(w http.ResponseWriter, r *http.Request, store dr.Storage) {
+	vars := mux.Vars(r)
+	category := vars["category"]
+	ID := vars["id"]
+
+	resource, err := store.Get(category, ID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	output, err := json.Marshal(resource)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("content-type", "application/json")
+	w.Write(output)
+}
+
+func handleIDPost(w http.ResponseWriter, r *http.Request, store dr.Storage) {
+	vars := mux.Vars(r)
+	category := vars["category"]
+	ID := vars["id"]
+
+	b, err := ioutil.ReadAll(r.Body)
+
+	var resource dr.Dr
+
+	err = json.Unmarshal(b, &resource)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if resource.Category != category { //avoid cross end-point permission attacks
+		http.Error(w, dr.ErrIllegalCategory.Error()+":"+resource.Category, http.StatusInternalServerError)
+		return
+	}
+	if resource.ID != ID { //conflicted id
+		http.Error(w, dr.ErrUndefinedID.Error()+": did you mean "+resource.ID+" or "+ID+"?", http.StatusInternalServerError)
+		return
+	}
+	err = store.Add(resource)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 }
 
 /*

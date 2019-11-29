@@ -65,6 +65,10 @@ func (m *MockStorage) GetMethod() map[string]int {
 	return m.Method
 }
 
+func (m *MockStorage) GetResource() dr.Dr {
+	return m.Args.Resource
+}
+
 // method for updating call record
 
 func (m *MockStorage) logMethod(method string) {
