@@ -8,7 +8,17 @@ import (
 	"github.com/timdrysdale/dr"
 )
 
-func handleGetRoot(w http.ResponseWriter, r *http.Request, store dr.Storage) {
+const pageNotFound = "page not found"
+
+func handleRoot(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, pageNotFound, 404)
+}
+
+func handleResourcesDelete(w http.ResponseWriter, r *http.Request, store dr.Storage) {
+	http.Error(w, pageNotFound, 404)
+}
+
+func handleResourcesGet(w http.ResponseWriter, r *http.Request, store dr.Storage) {
 	// list everything we have, in compact form!
 	everything, err := store.Categories()
 	if err != nil {

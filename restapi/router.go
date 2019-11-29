@@ -14,20 +14,27 @@ import (
 // DELETE, GET                /api/resources/
 //
 
+const pathApi = "/api"
+const pathResources = pathApi + "/resources"
+const pathCategory = pathResources + `/{category:[a-zA-Z0-9\-\/]+}`
+const pathID = pathCategory + `/{id:[a-zA-Z0-9\-\/]+}`
+
 func router(store dr.Storage) *mux.Router {
 
 	var router = mux.NewRouter()
 
-	root := "/api"
-	//category := `/{category:[a-zA-Z0-9\-\/]+}`
-	//id := `/{id:[a-zA-Z0-9\-\/]+}`
-	resources := "/resources"
-
-	//router.HandleFunc(root, handleRoot)
+	router.HandleFunc("/", handleRoot)
 
 	// on root
-	// router.HandleFunc(root+resources, handleDeleteRoot).Methods("DELETE")
-	router.HandleFunc(root+resources, func(w http.ResponseWriter, r *http.Request) { handleGetRoot(w, r, store) }).Methods("GET")
+	router.HandleFunc(pathResources,
+		func(w http.ResponseWriter, r *http.Request) {
+			handleResourcesDelete(w, r, store)
+		}).Methods("DELETE")
+
+	router.HandleFunc(pathResources,
+		func(w http.ResponseWriter, r *http.Request) {
+			handleResourcesGet(w, r, store)
+		}).Methods("GET")
 
 	// on a specific category
 	//router.HandleFunc(root+resources+category, handleDeleteCategory).Methods("DELETE")
