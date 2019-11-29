@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/timdrysdale/dr"
 )
 
@@ -38,6 +39,30 @@ func handleResourcesGet(w http.ResponseWriter, r *http.Request, store dr.Storage
 
 	w.Header().Set("content-type", "application/json")
 	w.Write(output)
+}
+
+func handleCategoryGet(w http.ResponseWriter, r *http.Request, store dr.Storage) {
+	vars := mux.Vars(r)
+	category := vars["category"]
+
+	categoryList, err := store.List(category)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	output, err := json.Marshal(categoryList)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("content-type", "application/json")
+	w.Write(output)
+}
+
+func handleCategoryDelete(w http.ResponseWriter, r *http.Request, store dr.Storage) {
+
 }
 
 /*
