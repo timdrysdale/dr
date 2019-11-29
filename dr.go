@@ -4,11 +4,11 @@ import "errors"
 
 type Storage interface {
 	Add(dr Dr) error
-	List(category string) (error, map[string]Dr)
-	Get(category string, id string) (error, Dr)
+	List(category string) (map[string]Dr, error)
+	Get(category string, id string) (Dr, error)
 	HealthCheck() error
 	Reset() error
-	Categories() (error, map[string]int)
+	Categories() (map[string]int, error)
 }
 
 type Dr struct {
