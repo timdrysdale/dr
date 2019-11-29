@@ -62,7 +62,23 @@ func handleCategoryGet(w http.ResponseWriter, r *http.Request, store dr.Storage)
 }
 
 func handleCategoryDelete(w http.ResponseWriter, r *http.Request, store dr.Storage) {
+	vars := mux.Vars(r)
+	category := vars["category"]
 
+	categoryList, err := store.List(category)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	for id, _ := range categoryList {
+		_, err = store.Delete(category, id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+	}
 }
 
 /*

@@ -127,9 +127,9 @@ func TestHandleCategoryGet(t *testing.T) {
 
 	handleCategoryGet(resp, req, m)
 
-	if m.Args.Category != category {
+	if m.GetCategory() != category {
 		t.Errorf(".List() called with wrong category:\ngot:%s\nexp:%s\n",
-			m.Args.Category, category)
+			m.GetCategory(), category)
 	}
 
 	obj, err := json.Marshal(resource)
@@ -141,4 +141,57 @@ func TestHandleCategoryGet(t *testing.T) {
 	checkContentTypeContains(t, resp, "application/json")
 	checkBodyEquals(t, resp, expected)
 
+}
+
+func TestHandleCategoryDelete(t *testing.T) {
+
+	// set up store
+	m := mock.New()
+	resource := dr.Dr{
+		Category:    "cat",
+		Description: "desc",
+		ID:          "id",
+		Resource:    "res",
+		Reusable:    true,
+		TTL:         123}
+	m.SetResource(resource)
+	//let's hope API doesn't notice that we've got inconsistency between
+	//list ID and resource.ID - else need to enhance mock to give
+	//multiple responses for multiple calls
+	ID1 := "some_id"
+	ID2 := "other_id"
+	l := map[string]dr.Dr{ID1: resource, ID2: resource}
+	m.SetList(l)
+
+	// set up req & resp
+	resp := httptest.NewRecorder()
+	category := "importantcategory99"
+	req, err := http.NewRequest("GET", "", nil)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	req = mux.SetURLVars(req, map[string]string{
+		"category": category,
+	})
+
+	handleCategoryDelete(resp, req, m)
+
+	if m.Method["List"] < 1 {
+		t.Errorf("Didn't call List once, but %d times\n", m.Method["List"])
+	}
+	if m.Method["Delete"] != 2 {
+		t.Errorf("Didn't call Delete twice, but %d times\n", m.Method["Delete"])
+	}
+
+	if m.GetCategory() != category {
+		t.Errorf(".Delete() called with wrong category:\ngot:%s\nexp:%s\n",
+			m.GetCategory(), category)
+	}
+
+	if m.GetID() != ID2 {
+		t.Errorf(".Delete() called with wrong ID:\ngot:%s\nexp:%s\n",
+			m.GetID(), ID2)
+	}
+
+	checkStatusCodeIs(t, resp, http.StatusOK)
 }
