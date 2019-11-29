@@ -1,7 +1,6 @@
 package ram
 
 import (
-	"errors"
 	"strings"
 	"sync"
 	"time"
@@ -186,7 +185,7 @@ func (r *RamStorage) HealthCheck() error {
 	if r.resources != nil {
 		return nil
 	} else {
-		return errors.New("Not initialised")
+		return dr.ErrUnhealthy
 	}
 }
 

@@ -192,9 +192,9 @@ func TestHandleCategoryDelete(t *testing.T) {
 			m.GetCategory(), category)
 	}
 
-	if m.GetID() != ID2 {
-		t.Errorf(".Delete() called with wrong ID:\ngot:%s\nexp:%s\n",
-			m.GetID(), ID2)
+	if (m.GetID() != ID1) && (m.GetID() != ID2) { //sometimes the operation order changes
+		t.Errorf(".Delete() called with wrong ID:\ngot:%s\nexp either:%s or %s\n",
+			m.GetID(), ID1, ID2)
 	}
 
 	checkStatusCodeIs(t, resp, http.StatusOK)
@@ -574,4 +574,42 @@ func TestHandleIDPostIDError(t *testing.T) {
 
 	checkStatusCodeIs(t, resp, http.StatusInternalServerError)
 	checkBodyEquals(t, resp, dr.ErrUndefinedID.Error()+": did you mean some_id or other_id?\n")
+}
+
+func TestHandleHealthCheck(t *testing.T) {
+
+	// set up store
+	m := mock.New()
+
+	// set up req & resp
+	resp := httptest.NewRecorder()
+	req, err := http.NewRequest("GET", "", nil)
+	if err != nil {
+		t.Error(err.Error())
+	}
+
+	handleHealthcheck(resp, req, m)
+
+	checkStatusCodeIs(t, resp, http.StatusOK)
+
+}
+
+func TestHandleHealthCheckError(t *testing.T) {
+
+	// set up store
+	m := mock.New()
+	m.SetError(dr.ErrUnhealthy)
+
+	// set up req & resp
+	resp := httptest.NewRecorder()
+	req, err := http.NewRequest("GET", "", nil)
+	if err != nil {
+		t.Error(err.Error())
+	}
+
+	handleHealthcheck(resp, req, m)
+
+	checkStatusCodeIs(t, resp, http.StatusInternalServerError)
+	checkBodyEquals(t, resp, dr.ErrUnhealthy.Error()+"\n")
+
 }
