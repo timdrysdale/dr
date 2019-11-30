@@ -86,6 +86,14 @@ func (r *RamStorage) Categories() (map[string]int, error) {
 	}
 
 	r.RLock()
+	numCategories = len(r.resources)
+	r.RUnlock()
+
+	if numCategories == 0 {
+		return categoryMap, dr.ErrEmptyStorage
+	}
+
+	r.RLock()
 	for category, resourceMap := range r.resources {
 		categoryMap[category] = len(resourceMap)
 	}
@@ -109,6 +117,9 @@ func (r *RamStorage) Delete(category string, id string) (dr.Dr, error) {
 	// ID existence check & deletion
 	if expiringResource, ok := r.resources[category][id]; ok {
 		delete(r.resources[category], id)
+		if len(r.resources[category]) == 0 {
+			delete(r.resources, category)
+		}
 		return expiringResource.resource, nil
 	} else {
 		// not found
@@ -144,6 +155,9 @@ func (r *RamStorage) Get(category string, id string) (dr.Dr, error) {
 			if newTTL < 0 {
 				expired = true
 				delete(r.resources[category], id)
+				if len(r.resources[category]) == 0 {
+					delete(r.resources, category)
+				}
 			} else {
 				// update TTL
 				temp := r.resources[category][id]
@@ -165,6 +179,10 @@ func (r *RamStorage) Get(category string, id string) (dr.Dr, error) {
 			// delete if single use
 			if !expiringResource.resource.Reusable {
 				delete(r.resources[category], id)
+				if len(r.resources[category]) == 0 {
+					delete(r.resources, category)
+				}
+
 			}
 
 			// return resource (with up-to-date TTL)
@@ -222,6 +240,9 @@ func (r *RamStorage) List(category string) (map[string]dr.Dr, error) {
 			if newTTL < 0 {
 				expired = true
 				delete(r.resources[category], id)
+				if len(r.resources[category]) == 0 {
+					delete(r.resources, category)
+				}
 			} else {
 				// update TTL
 				temp := r.resources[category][id]

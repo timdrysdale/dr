@@ -471,7 +471,7 @@ func TestInterface(t *testing.T, tester Tester) {
 	}
 
 	//accurate TTL on GET?
-	originalTTL := int64(99)
+	originalTTL := int64(3)
 	err = storage.Add(dr.Dr{
 		Category:    "x",
 		ID:          "y",
@@ -493,6 +493,58 @@ func TestInterface(t *testing.T, tester Tester) {
 	categories, err = storage.Categories()
 	result = (err == nil) && reflect.DeepEqual(categories, expectedCategoriesAfterTTL)
 	processResult(t, result, "map categories and ignore stale resource")
+
+	// category deletion test - Categories
+	result = true
+	deletedCategory := "deleteMe"
+	err = storage.Add(dr.Dr{
+		Category:    deletedCategory,
+		ID:          "y",
+		Description: "",
+		Resource:    "",
+		Reusable:    true,
+		TTL:         1,
+	})
+	if err != nil {
+		result = false
+	}
+
+	// await x.y expiring
+	time.Sleep(2000 * time.Millisecond)
+
+	list, err := storage.Categories()
+	if err != nil {
+		result = false
+	}
+	if _, ok := list[deletedCategory]; ok {
+		result = false
+	}
+	processResult(t, result, "Categories deletes empty categories")
+
+	// category deletion test - delete
+	result = true
+	deletedCategory = "deleteMe"
+	err = storage.Add(dr.Dr{
+		Category:    deletedCategory,
+		ID:          "y",
+		Description: "",
+		Resource:    "",
+		Reusable:    true,
+		TTL:         1,
+	})
+
+	if err != nil {
+		result = false
+	}
+	_, err = storage.Delete(deletedCategory, "y")
+	list, err = storage.Categories()
+	if err != nil {
+		result = false
+	}
+	if _, ok := list[deletedCategory]; ok {
+		result = false
+	}
+	processResult(t, result, "Delete deletes empty categories")
 
 }
 
