@@ -29,11 +29,11 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.98994949"
-     inkscape:cx="335.65707"
+     inkscape:zoom="2.8"
+     inkscape:cx="129.58595"
      inkscape:cy="98.571428"
      inkscape:document-units="mm"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="g1411"
      showgrid="false"
      inkscape:window-width="1920"
      inkscape:window-height="1101"
@@ -48,7 +48,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -275,7 +275,7 @@
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333311px;line-height:1.25;font-family:Comfortaa;-inkscape-font-specification:Comfortaa;letter-spacing:0px;word-spacing:0px;fill:#46627f;fill-opacity:1;stroke:none;stroke-width:0.26458332"
          id="text1338"><textPath
            id="textPath1342"
-           xlink:href="#path1325">other deployments</textPath></text>
+           xlink:href="#path1325">deployment (drserver)</textPath></text>
       <path
          sodipodi:nodetypes="cc"
          inkscape:connector-curvature="0"
